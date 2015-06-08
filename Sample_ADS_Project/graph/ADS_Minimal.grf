@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?><Graph author="koles" created="Thu Aug 01 11:33:37 PDT 2013" guiVersion="3.4.4.P" id="1375382343499" licenseType="Commercial" modified="Fri Nov 28 13:09:07 CET 2014" modifiedBy="jirtob" name="MSF-3862" revision="1.132" showComponentDetails="true">
+<Global>
+<Metadata id="Metadata0" previewAttachment="${DATA_SOURCE_DIR}/5k-lines.csv" previewAttachmentCharset="ISO-8859-1">
+<Record label="5k-lines.csv" name="_5k_lines_csv" previewAttachment="${DATA_SOURCE_DIR}/5k-lines.csv" previewAttachmentCharset="ISO-8859-1" quoteChar="both" quotedStrings="false" recordDelimiter="\n" skipSourceRows="0" type="delimited">
+<Field eofAsDelimiter="false" name="Field1" type="integer"/>
+</Record>
+</Metadata>
+<Metadata id="Metadata1" previewAttachmentCharset="UTF-8">
+<Record fieldDelimiter="|" name="db_copy_info" previewAttachmentCharset="UTF-8" recordDelimiter="\n" recordSize="-1" type="delimited">
+<Field eofAsDelimiter="false" name="fileName" nullable="true" shift="0" size="0" type="string"/>
+<Field name="filePath" type="string"/>
+<Field name="copyStmt" type="string"/>
+</Record>
+</Metadata>
+<Metadata id="Metadata2" previewAttachment="${DATA_SOURCE_DIR}/opportunities.csv" previewAttachmentCharset="ISO-8859-1">
+<Record fieldDelimiter="|" label="opportunities.csv" name="opportunities" previewAttachment="${DATA_SOURCE_DIR}/opportunities.csv" previewAttachmentCharset="ISO-8859-1" quoteChar="both" quotedStrings="false" recordDelimiter="\n" skipSourceRows="1" type="delimited">
+<Field name="id" type="string"/>
+<Field name="name" type="string"/>
+<Field name="created" type="string"/>
+<Field name="closed" type="string"/>
+<Field name="stage" type="string"/>
+<Field name="is_closed" type="string"/>
+<Field name="is_won" type="string"/>
+<Field name="amount" type="string"/>
+<Field eofAsDelimiter="false" name="last_modified" type="string"/>
+</Record>
+</Metadata>
+<Connection database="DSS" dbURL="jdbc:dss://secure.gooddata.com/gdc/dss/instances/${ADS_INSTANCE_ID}" id="JDBC0" jdbc.threepartnaming="false" jdbcSpecific="DSS" name="ADS Connection" password="${DSS_PASSWORD}" type="JDBC" user="${ADS_USER}"/>
+<Property fileURL="workspace.prm" id="GraphParameter0"/>
+<Note alignment="1" backgroundColorB="225" backgroundColorG="255" backgroundColorR="255" enabled="true" folded="false" height="72" id="Note0" textColorB="0" textColorG="0" textColorR="0" textFontSize="12" title="Phase 0" titleColorB="0" titleColorG="0" titleColorR="0" titleFontSize="14" width="252" x="603" y="216">
+<attr name="text"><![CDATA[Create the opportunities table unless it already exists.]]></attr>
+</Note>
+<Note alignment="1" backgroundColorB="225" backgroundColorG="255" backgroundColorR="255" enabled="true" folded="false" height="65" id="Note1" textColorB="0" textColorG="0" textColorR="0" textFontSize="12" title="Phase 1" titleColorB="0" titleColorG="0" titleColorR="0" titleFontSize="14" width="248" x="605" y="298">
+<attr name="text"><![CDATA[Load the new data into the opportunities table.]]></attr>
+</Note>
+<Note alignment="1" backgroundColorB="225" backgroundColorG="255" backgroundColorR="255" enabled="true" folded="false" height="72" id="Note3" textColorB="0" textColorG="0" textColorR="0" textFontSize="12" title="Phase 2" titleColorB="0" titleColorG="0" titleColorR="0" titleFontSize="14" width="248" x="605" y="377">
+<attr name="text"><![CDATA[Load results of a SQL query directly into a GoodData project]]></attr>
+</Note>
+<Note alignment="1" backgroundColorB="225" backgroundColorG="255" backgroundColorR="255" enabled="true" folded="false" height="170" id="Note2" textColorB="0" textColorG="0" textColorR="0" textFontSize="12" title="Minimal ADS based CloudConnect graph" titleColorB="0" titleColorG="0" titleColorR="0" titleFontSize="14" width="812" x="43" y="26">
+<attr name="text"><![CDATA[Technically, this minimal example is not how you are likely to be using ADS in your projects.
+This is because the underlying database does not enforce the primary key constraint and the COPY command does not merge updates into existing table automatically.
+For a more realistic data loading example refer to the ADS_Merge graph.
+
+Do not forget to set the following runtime parameters before running this graph:
+- ADS_USER
+- ADS_PASSWORD
+- ADS_INSTANCE_ID]]></attr>
+</Note>
+<Dictionary>
+<Entry id="DictionaryEntry0" input="true" name="data_source_abs_path" output="true" type="string"/>
+<Entry id="DictionaryEntry1" input="true" name="data_source_file_name" output="true" type="string"/>
+</Dictionary>
+</Global>
+<Phase number="0">
+<Node dbConnection="JDBC0" enabled="enabled" guiName="DDL: create opportunities" guiX="41" guiY="216" id="DDL_CREATE_OPPORTUNITIES" inTransaction="all" printStatements="true" type="DB_EXECUTE">
+<attr name="sqlQuery"><![CDATA[CREATE TABLE IF NOT EXISTS in_opportunities (
+  _oid IDENTITY PRIMARY KEY,
+  id VARCHAR(32),
+  name VARCHAR(255) NOT NULL,
+  created TIMESTAMP NOT NULL,
+  closed TIMESTAMP,
+  stage VARCHAR(32) NOT NULL,
+  is_closed BOOLEAN NOT NULL,
+  is_won BOOLEAN NOT NULL,
+  amount DECIMAL(20,2),
+  last_modified TIMESTAMP
+)]]></attr>
+</Node>
+</Phase>
+<Phase number="1">
+<Node dbConnection="JDBC0" enabled="enabled" guiName="COPY: load opportunities" guiX="42" guiY="298" id="COPY_LOAD_OPPORTUNITIES" inTransaction="all" printStatements="true" type="DB_EXECUTE">
+<attr name="sqlQuery"><![CDATA[COPY in_opportunities
+  (id, name, created, closed, stage, is_closed, is_won, amount, last_modified)
+  FROM LOCAL '${DATA_SOURCE_DIR}/opportunities.csv'
+  SKIP 1
+  ABORT ON ERROR]]></attr>
+</Node>
+</Phase>
+<Phase number="2">
+<Node dbConnection="JDBC0" enabled="enabled" guiName="EXTRACT Opportunities" guiX="42" guiY="380" id="EXTRACT_OPPORTUNITIES" type="DB_INPUT_TABLE">
+<attr name="sqlQuery"><![CDATA[SELECT id, name, created, closed, stage, is_closed, is_won, amount, last_modified
+  FROM in_opportunities]]></attr>
+</Node>
+<Node dataset="dataset.opportunities" datasetFieldMappings="{&quot;gd_dataset&quot;:{&quot;datasetId&quot;:&quot;dataset.opportunities&quot;,&quot;datasetTitle&quot;:&quot;opportunities&quot;,&quot;attributes&quot;:[{&quot;gd_dataset_attribute&quot;:{&quot;id&quot;:&quot;attr.opportunities.id&quot;,&quot;title&quot;:&quot;id&quot;,&quot;prettyId&quot;:&quot;attr_opportunities_id&quot;,&quot;displayForms&quot;:[{&quot;gd_dataset_attribute_display_form&quot;:{&quot;id&quot;:&quot;label.opportunities.id&quot;,&quot;title&quot;:&quot;id&quot;,&quot;prettyId&quot;:&quot;id&quot;,&quot;assignedMetadataField&quot;:&quot;id&quot;,&quot;referenceKey&quot;:true}},{&quot;gd_dataset_attribute_display_form&quot;:{&quot;id&quot;:&quot;label.opportunities.id.name&quot;,&quot;title&quot;:&quot;name&quot;,&quot;prettyId&quot;:&quot;id_name&quot;,&quot;assignedMetadataField&quot;:&quot;name&quot;,&quot;referenceKey&quot;:false}}],&quot;assignedMetadataField&quot;:null,&quot;selectedDisplayForm&quot;:{&quot;gd_dataset_attribute_display_form&quot;:{&quot;id&quot;:&quot;label.opportunities.id&quot;,&quot;title&quot;:&quot;id&quot;,&quot;prettyId&quot;:&quot;id&quot;,&quot;assignedMetadataField&quot;:&quot;id&quot;,&quot;referenceKey&quot;:true}}}},{&quot;gd_dataset_attribute&quot;:{&quot;id&quot;:&quot;attr.opportunities.stage&quot;,&quot;title&quot;:&quot;stage&quot;,&quot;prettyId&quot;:&quot;attr_opportunities_stage&quot;,&quot;displayForms&quot;:[{&quot;gd_dataset_attribute_display_form&quot;:{&quot;id&quot;:&quot;label.opportunities.stage&quot;,&quot;title&quot;:&quot;stage&quot;,&quot;prettyId&quot;:&quot;stage&quot;,&quot;assignedMetadataField&quot;:&quot;stage&quot;,&quot;referenceKey&quot;:true}}],&quot;assignedMetadataField&quot;:null,&quot;selectedDisplayForm&quot;:{&quot;gd_dataset_attribute_display_form&quot;:{&quot;id&quot;:&quot;label.opportunities.stage&quot;,&quot;title&quot;:&quot;stage&quot;,&quot;prettyId&quot;:&quot;stage&quot;,&quot;assignedMetadataField&quot;:&quot;stage&quot;,&quot;referenceKey&quot;:true}}}}],&quot;referencedAttributes&quot;:[],&quot;dateAttributes&quot;:[],&quot;simpleFacts&quot;:[{&quot;gd_dataset_fact&quot;:{&quot;id&quot;:&quot;fact.opportunities.amout&quot;,&quot;title&quot;:&quot;amout&quot;,&quot;prettyId&quot;:&quot;amout&quot;,&quot;type&quot;:&quot;DECIMAL&quot;,&quot;assignedMetadataField&quot;:&quot;amount&quot;}}],&quot;dateFacts&quot;:[],&quot;fieldsWithMetadataConflict&quot;:[],&quot;entitiesWithoutMetadata&quot;:[],&quot;entitiesWithoutValue&quot;:[],&quot;datesWithFactConflict&quot;:[],&quot;unassigneddateFacts&quot;:[]}}" enabled="enabled" guiName="GD Dataset Writer" guiX="343" guiY="380" id="GD_DATASET_WRITER" retriesInterval="60" retriesNumber="5" type="GD_DATASET_WRITER"/>
+<Edge fromNode="EXTRACT_OPPORTUNITIES:0" guiBendpoints="" guiRouter="Manhattan" id="Edge1" inPort="Port 0 (in)" metadata="Metadata2" outPort="Port 0 (out)" toNode="GD_DATASET_WRITER:0"/>
+</Phase>
+</Graph>
